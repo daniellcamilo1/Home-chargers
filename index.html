@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Highlands of Marin Chargers</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Mt_Tamalpais_from_Larkspur_Landing.jpg/1280px-Mt_Tamalpais_from_Larkspur_Landing.jpg') no-repeat center center fixed;
+      background-size: cover;
+      margin: 0;
+      padding: 20px;
+      backdrop-filter: blur(6px);
+      color: #333;
+    }
+    h2 {
+      text-align: center;
+      color: #2a3b2d;
+      background: rgba(255,255,255,0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    .last-refresh {
+      text-align: center;
+      color: #555;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .pole {
+      margin: 20px auto;
+      max-width: 500px;
+      padding: 15px;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: background 0.3s ease;
+    }
+    .pole.low-usage { background-color: rgba(198, 239, 206, 0.7); }
+    .pole.medium-usage { background-color: rgba(255, 255, 204, 0.7); }
+    .pole.high-usage { background-color: rgba(255, 204, 204, 0.6); }
+    .charger {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      font-size: 16px;
+    }
+    .status {
+      font-weight: bold;
+    }
+    .available { color: #2e7d32; }
+    .charging { color: #0277bd; }
+    .preparing { color: #ff8f00; }
+    .idle { color: #6c757d; }
+    .unavailable, .error { color: #c62828; }
+  </style>
+</head>
+<body>
+  <h2>Highlands of Marin Chargers</h2>
+  <div class="last-refresh" id="last-refresh">Last refreshed: Loading...</div>
+  <script>
+    const poleData = {
+      "Gym Pole 1": [38, 35],
+      "Gym Pole 2": [37, 33],
+      "Leasing Office Pole": [36, 34]
+    };
+    const statusMap = {};
+
+    async function fetchStatus(id, url) {
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        let status = 'unknown';
+        if (/Available/.test(text)) status = 'available';
+        else if (/Charging/.test(text)) status = 'charging';
+        else if (/Preparing/.test(text)) status = 'preparing';
+        else if (/Idle/.test(text)) status = 'idle';
+        else if (/Unavailable|Error/.test(text)) status = 'unavailable';
+        const statusElem = document.getElementById('status-' + id);
+        const labelElem = document.getElementById('label-' + id);
+        let labelMap = {
+          'available': 'Available',
+          'charging': 'Charging',
+          'preparing': 'Car Plugged but forgot to input Payment',
+          'idle': 'Car Plugged but not Charging',
+          'unavailable': 'Unavailable',
+          'error': 'Error'
+        };
+        statusElem.textContent = labelMap[status] || 'Unknown';
+        labelElem.className = status;
+        statusMap[id] = status;
+      } catch (e) {
+        const statusElem = document.getElementById('status-' + id);
+        const labelElem = document.getElementById('label-' + id);
+        statusElem.textContent = 'Error';
+        labelElem.className = 'error';
+        statusMap[id] = 'error';
+      }
+    }
+
+    function updatePoleBackgrounds() {
+      for (const [pole, ids] of Object.entries(poleData)) {
+        const elem = document.getElementById(pole.replace(/ /g, '-'));
+        const statuses = ids.map(id => statusMap[id]);
+        const numCharging = statuses.filter(s => s === 'charging').length;
+        if (numCharging === 0) {
+          elem.classList.add('low-usage');
+        } else if (numCharging === 1) {
+          elem.classList.add('medium-usage');
+        } else {
+          elem.classList.add('high-usage');
+        }
+      }
+    }
+
+    function refreshAll() {
+      fetchStatus(38, 'https://corsproxy.io/?https://portal.plugop.com/chargers/38');
+      fetchStatus(35, 'https://corsproxy.io/?https://portal.plugop.com/chargers/35');
+      fetchStatus(37, 'https://corsproxy.io/?https://portal.plugop.com/chargers/37');
+      fetchStatus(33, 'https://corsproxy.io/?https://portal.plugop.com/chargers/33');
+      fetchStatus(36, 'https://corsproxy.io/?https://portal.plugop.com/chargers/36');
+      fetchStatus(34, 'https://corsproxy.io/?https://portal.plugop.com/chargers/34');
+
+      const now = new Date();
+      document.getElementById('last-refresh').textContent =
+        'Last refreshed: ' + now.toLocaleTimeString();
+      setTimeout(updatePoleBackgrounds, 2000);
+    }
+
+    setInterval(refreshAll, 60000);
+    document.addEventListener('DOMContentLoaded', refreshAll);
+  </script>
+<div class='pole' id='Gym-Pole-1'><h3>Gym Pole 1</h3><div class='charger'><span id='label-38'>Charger #38</span> <span id='status-38' class='status'>Loading...</span></div><div class='charger'><span id='label-35'>Charger #35</span> <span id='status-35' class='status'>Loading...</span></div></div><div class='pole' id='Gym-Pole-2'><h3>Gym Pole 2</h3><div class='charger'><span id='label-37'>Charger #37</span> <span id='status-37' class='status'>Loading...</span></div><div class='charger'><span id='label-33'>Charger #33</span> <span id='status-33' class='status'>Loading...</span></div></div><div class='pole' id='Leasing-Office-Pole'><h3>Leasing Office Pole</h3><div class='charger'><span id='label-36'>Charger #36</span> <span id='status-36' class='status'>Loading...</span></div><div class='charger'><span id='label-34'>Charger #34</span> <span id='status-34' class='status'>Loading...</span></div></div></body></html>
